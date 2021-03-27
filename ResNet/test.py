@@ -9,11 +9,11 @@ from model import ResNet50
 from load_MITDogs import load_dataset, create_breed_dataset
 from tqdm import tqdm
 
-lr = 1e-5
+lr = 1e-4
 steps_per_epoch =  50
-epochs = 50#200
-classes = 2 #10
-batch_size = 4
+epochs = 20
+classes = 10
+batch_size = 2
 
 
 # device='cpu'
@@ -48,7 +48,16 @@ def train(model, epochs, trainx, trainy, steps_per_epoch , batch_size=2, results
         print((i, epoch_loss))
     return(model,loss_log)
 
-
+def test_model(model, test_x, test_y):
+    true_count = np.zeros((classes))
+    total_count = np.zeros((classes))
+    for i in tqdm(range(len(test_x))):
+        guess = np.argmax(model(test_x[i].cuda()).detach().cpu().numpy())
+        truth = int(test_y[i].numpy())
+        if guess == truth:
+            true_count[truth]+=1
+        total_count[truth]+=1
+    return(true_count, total_count)
 
 #load premade resnet50 as sample
 
@@ -79,3 +88,17 @@ if __name__ == '__main__':
 
     plt.savefig('results/'+session_name+'.png')
     plt.show()
+
+    print("Testing model Performance")
+    true_count, total_count=test_model(model, test_x, test_y)
+    print('results')
+    print(true_count)
+    print(total_count)
+    accuracy = true_count/total_count
+    print(accuracy)
+    breeds=[]
+    for i in range(classes):
+        breeds+=[database[str(i)]['breed']]
+    print('Accuracy by breed:')
+    for i in range(len(breeds)):
+        print(str(accuracy[i])+"% -"+str(breeds[i]))

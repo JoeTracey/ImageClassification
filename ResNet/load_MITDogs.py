@@ -80,8 +80,8 @@ def create_breed_dataset(dataset, number_of_breeds=120):
                 test_y += [i]
     train_x, train_y, test_x, test_y =np.array(train_x), train_y, np.array(test_x), test_y
     #normalize image data
-    train_x = train_x.astype('float64')*1/np.max(train_x)
-    test_x = test_x.astype('float64')*1/np.max(test_x)
+    train_x = train_x.astype('float16')*1/np.max(train_x).astype('float64')
+    test_x = test_x.astype('float16')*1/np.max(test_x).astype('float64')
 
 
     classes = int(np.max(train_y).item()+1)
