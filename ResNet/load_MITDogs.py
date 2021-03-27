@@ -1,15 +1,14 @@
-import numpy as np 
-import torch 
+import numpy as np
+import torch
 import os
 from PIL import Image
-
+from tqdm import tqdm
 
 
 def load_dataset(dir = "MITDogs/Images/", dir_annotations = "MITDogs/Annotation/", max_breeds=120):
     database = {}
     i=0
-    for folder in os.listdir(dir)[:max_breeds]:
-        # print((folder.split('-', 1), i))
+    for folder in tqdm(os.listdir(dir)[:max_breeds]):
         id, breed = folder.split('-', 1)
         folder+='/'
 
@@ -31,7 +30,7 @@ def load_dataset(dir = "MITDogs/Images/", dir_annotations = "MITDogs/Annotation/
                 n+=1
             except(ValueError):
                 breed_dict['image_count'] -= 1
-            
+
 
         database[str(i)] = breed_dict
         i+=1
@@ -68,14 +67,11 @@ def read_annotation(filename):
 
 def create_breed_dataset(dataset, number_of_breeds=120):
     train_x, train_y, test_x, test_y = [],[],[],[]
-    for i in range(number_of_breeds):
+    for i in tqdm(range(number_of_breeds)):
         # print(i)
         image_count = dataset[str(i)]['image_count']
         div = image_count *0.7 //1
         for n in range(image_count):
-            # print((i,n))
-            # print(dataset.keys())
-            # print(dataset[str(i)].keys())
             if n < div:
                 train_x += [dataset[str(i)][str(n)]['img_array']]
                 train_y += [i]
@@ -88,31 +84,12 @@ def create_breed_dataset(dataset, number_of_breeds=120):
     test_x = test_x.astype('float64')*1/np.max(test_x)
 
 
-
-    # train_y = train_y.flatten()
-    # test_y = test_y.flatten()
-
-    #onehot encode truths
     classes = int(np.max(train_y).item()+1)
-    # for i in range(len(train_y)):
-    #     # print(classes)
-    #     blank = np.zeros(classes)
-    #     # print(blank)
-    #     # print(train_y[i])
-    #     blank[int(train_y[i])] = 1
-    #     train_y[i] = blank
-    # for i in range(len(test_y)):
-    #     blank = np.zeros(classes)
-    #     blank[int(test_y[i])] = 1
-    #     test_y[i] = blank
-    
-    # train_y = np.expand_dims(train_y,1)
-    # test_y = np.expand_dims(test_y,1)
 
-    train_x = torch.Tensor(train_x)#.to(device)
-    train_y = torch.Tensor(train_y)#.to(device)
-    test_x = torch.Tensor(test_x)#.to(device)
-    test_y = torch.Tensor(test_y)#.to(device)
+    train_x = torch.Tensor(train_x)
+    train_y = torch.Tensor(train_y)
+    test_x = torch.Tensor(test_x)
+    test_y = torch.Tensor(test_y)
 
     return(train_x, train_y, test_x, test_y)
 
@@ -121,12 +98,9 @@ def create_annotation_dataset(dataset, number_of_breeds=120):
     pass
 
 
-database = load_dataset(max_breeds= 10)
-# print('make breed dataset')
-train_x, train_y, test_x, test_y =create_breed_dataset(database, 2)
-# print(np.shape(train_x))
-# print(train_y)
 
-
-# for i in train_x:
-#     print(np.shape(i))  # therefore should use 500x500 model with padding to make all images same size
+if __name__ == '__main__':
+    print('Loading dataset')
+    database = load_dataset(max_breeds= 10)
+    print("creating trainging/test data")
+    train_x, train_y, test_x, test_y =create_breed_dataset(database, 2)
