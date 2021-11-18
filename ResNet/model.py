@@ -5,7 +5,7 @@ from torchsummary import summary
 
 
 
-
+#implimenting ResNet50 through pytorch
 class ResNet50(torch.nn.Module):
     def __init__(self, classes=1000):
         super().__init__()
@@ -39,17 +39,18 @@ class ResNet50(torch.nn.Module):
         self.pool = torch.nn.AdaptiveAvgPool2d(output_size = (1,1))
         self.dense = torch.nn.Linear(2048, classes)
 
-        #output
 
 
-
+    #determines flow of data through network
     def forward(self,x):
 
+        #connect layers of input block
         x = self.c0(x)
         x = self.b0(x)
         x = self.r0(x)
         x = self.m0(x)
 
+        #attach skip connections and convblocks to for body of network
         for layer in self.layers:
             x_skip = x.clone()
             for block_layer in layer[0]:
@@ -58,12 +59,14 @@ class ResNet50(torch.nn.Module):
                 x_skip = skip_layer(x_skip)
             x+=x_skip
 
+        # Adding in output layers
         x = self.pool(x)
         x = torch.nn.Flatten()(x)
         x = self.dense(x)
 
         return(x)
 
+    #Handles skip connections
     def generate_skip(self, input_channels, output_channels, stride = 1, step_number= 0):
         layers = []
         layers += [torch.nn.Conv2d(input_channels,output_channels, kernel_size=1, stride = stride)]
@@ -75,13 +78,15 @@ class ResNet50(torch.nn.Module):
         setattr(self, 'Skip'+str(step_number)+':ReLU', layers[-1])
         return(layers)
 
+    #Generates convblock layers
     def generate_convblock(self, input_channels, output_channels, stride = 1, step_number= 0):
         mid = output_channels//4
         layers = []
-        
+        #Build and configure layers
         layers += [torch.nn.Conv2d(input_channels,mid, kernel_size=1, stride = stride, padding = 0)]
         layers += [torch.nn.BatchNorm2d(mid, eps=1e-5, momentum=0.1)]
         layers += [torch.nn.ReLU()]
+        #Name layers for clarity in model summary
         setattr(self, 'Block'+str(step_number)+':convA', layers[-3])
         setattr(self, 'Block'+str(step_number)+':NormA', layers[-2])
         setattr(self, 'Block'+str(step_number)+':ReLUA', layers[-1])

@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from model import ResNet50
 from load_MITDogs import load_dataset, create_breed_dataset
-from tqdm import tqdm
+from tqdm import tqdm #handles progress bars
 
 # Set Parameters for Session
 lr = 1e-5                   #learning rate - float effects training sensitivity
@@ -17,9 +17,9 @@ batch_size = 6              #Number of images seen by model per step
 
 
 # Select device, either 'cpu' or 'cuda:(gpu-id)'
-device = 'cuda:0'
+device = 'cuda:0' #set to run on first GPU
 
-#name for training session, records details
+#name for training session, records details for comparison
 session_name = "classes"+str(classes)+"_epoch"+str(epochs)+"_steps"+str(steps_per_epoch)+"_lr1e"+str(lr)+"_bs"+str(batch_size)
 print(session_name)
 
@@ -44,32 +44,37 @@ def train(model, epochs, trainx, trainy, steps_per_epoch , batch_size=2, results
             #Set datatype and move tensors to GPU
             x_in , y_true = x_in.float().cuda(), y_true.long().cuda()
             optimizer.zero_grad()                        #Reset gradient on optimizer
-            y_out = model(x_in)                          #Apply model to
-            loss = criterion(y_out, y_true)              #
-            loss.backward()                              #
-            optimizer.step()                             #
-            epoch_loss += loss.detach().cpu().numpy()    #
+            y_out = model(x_in)                          #Apply model to sample
+            loss = criterion(y_out, y_true)              #Compare prediction to truth
+            loss.backward()                              #Calculate backpropogation
+            optimizer.step()                             #Take one optimization step using calculated loss
+            epoch_loss += loss.detach().cpu().numpy()    #store loss as a float to save space
 
         epoch_loss = epoch_loss/steps_per_epoch
         loss_log+=[epoch_loss]
+        #print loss for epoch for progress tracking
         print((i, epoch_loss))
     return(model,loss_log)
 
 # Predict model on data without training, returns
-def test_model(model, test_x, test_y):
+def test_model(model, test_x, test_y): # test_x = samples, test_y = sample class numbers
+    #generate arrays to track correct guesses vs total guesses for each class
     true_count = np.zeros((classes))
     total_count = np.zeros((classes))
+    #test each sample
     for i in tqdm(range(len(test_x))):
+        #predict on sample then move prediction off of gpus to save space
         guess = np.argmax(model(test_x[i].cuda()).detach().cpu().numpy())
-        truth = int(test_y[i].numpy())
+        truth = int(test_y[i].numpy()) #samples class number
+        #update guesses
         if guess == truth:
             true_count[truth]+=1
         total_count[truth]+=1
+    #return array of true and total guesses for each class
     return(true_count, total_count)
 
 
 if __name__ == '__main__':
-
 
     # load dataset
     print("Loading Dataset.")
